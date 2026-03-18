@@ -1,0 +1,85 @@
+# ============================================================
+# SATTC — .gitignore for academic ML repository (CVPR 2026)
+# ============================================================
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ---- Virtual Environments ----
+venv/
+.venv/
+env/
+.conda/
+
+# ---- ML Model Weights & Checkpoints ----
+*.pth
+*.pt
+*.onnx
+*.safetensors
+*.bin
+ckpt/
+checkpoints/
+
+# ---- Data & Large Arrays ----
+*.npz
+*.npy
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+data/
+datasets/
+image_set/
+Retrieval/image_set/
+
+# ---- Experiment Outputs ----
+outputs/
+Retrieval/outputs/
+Retrieval/Outputs/
+Retrieval/results/
+Retrieval/old_outputs/
+Retrieval/conditional_outputs/
+Retrieval/sliding_window_outputs/
+results/
+logs/
+runs/
+
+# ---- Weights & Biases ----
+wandb/
+Retrieval/wandb/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- IDE & OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+*.out
+
+# ---- Miscellaneous ----
+.env
+*.bak
+*.tmp
+Retrieval/version backup/
+Retrieval/Visualize/
+Retrieval/centralRepo/
+Retrieval/CLIP-dissect/
+Retrieval/LAVIS/
+Retrieval/ckpt/
