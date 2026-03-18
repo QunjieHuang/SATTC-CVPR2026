@@ -1,0 +1,30 @@
+# SATTC — Core Dependencies
+# Install: pip install -r requirements.txt
+
+torch>=2.0.0
+torchvision>=0.15.0
+numpy
+scipy
+scikit-learn
+h5py
+
+# EEG processing
+mne>=1.5.0
+braindecode>=0.8.1
+
+# Transformers & attention
+einops
+reformer_pytorch
+
+# CLIP backbone
+open_clip_torch
+
+# Training utilities
+accelerate
+wandb
+tqdm
+matplotlib
+
+# Loss
+info-nce-pytorch>=0.1.0
+pytorch-msssim
