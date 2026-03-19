@@ -97,7 +97,7 @@ class EEGDataset(Dataset):
         if self.classes is None:
             self.class2local = None
             if self.train and self.images_per_class is None:
-                # 默认保留训练集中每类 10 张图片
+                # By default, keep 10 images per class from the training set.
                 self.images_per_class = 10
             elif not self.train and self.images_per_class is None:
                 self.images_per_class = 1

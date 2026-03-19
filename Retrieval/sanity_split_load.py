@@ -53,7 +53,7 @@ def main():
     xv, yv, tv, tfv, iv, ifv = next(iter(val_loader))
     print(f" Val sample: x={xv.shape}, y={yv.item()}, tf={tfv.shape}, if={ifv.shape}")
 
-    print("✅ Sanity passed: split-driven datasets can be built and iterated.")
+    print(" Sanity passed: split-driven datasets can be built and iterated.")
 
 
 if __name__ == '__main__':

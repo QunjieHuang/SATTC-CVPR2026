@@ -1,17 +1,17 @@
 # =================================================================================
-# 2025.10.17 v1.5版本已经完成了严谨的可对比的baseline（可选择cos和dot评估）
+# 2025.10.17 v1.5baselinecosdot
 
-# 跑完三个seed：42、3407、20251的结果
-# dot评价指标会更好看，但是同时也引入了范数的影响，指标偏向于乐观，不视为逻辑错误但仍有质疑的点
-# 优化了脚本的运行速度
-# 保证了严谨地对比基线，评估、验证划分的方法都是严谨的
-# =================================================================================
-# 开启v2版本
-# 1、先将subject_ids修改为“真实训练样本所属被试”，提高建模的严谨性
+# seed42340720251
+# dot
 
 
 # =================================================================================
-# eegdatasets_leaveone里修改了加载本地openclip（.pt）文件进行计算
+# v2
+# 1subject_ids“”
+
+
+# =================================================================================
+# eegdatasets_leaveoneopenclip.pt
 
 import os
 import gc
@@ -442,7 +442,7 @@ def print_stage_summary(stage_name, subject, primary_metrics, auxiliary_metrics=
     """Pretty-print stage summary with primary and optional auxiliary metrics."""
     stage_title = stage_name.capitalize()
     subject_tag = subject if isinstance(subject, str) else str(subject)
-    print(f"\n📊 {stage_title} Stage Summary ({subject_tag}):")
+    print(f"\n {stage_title} Stage Summary ({subject_tag}):")
     for label, value in primary_metrics.items():
         print(f"   - {label}: {_format_metric_value(value)}")
     if auxiliary_metrics:
@@ -557,9 +557,9 @@ def subject_adaptive_whiten(features, shrink=0.2, diag=False):
 
 
 def csls_scores(similarities: torch.Tensor, k: int = 10) -> torch.Tensor:
-    """Apply CSLS重打分缓解hubness问题, 输入为[N,C]相似度矩阵."""
+    """Apply CSLS rescoring to mitigate hubness. Input: [N, C] similarity matrix."""
     if similarities.dim() != 2:
-        raise ValueError("CSLS期望[N, C]二维相似度矩阵")
+        raise ValueError("CSLS expects a 2-D similarity matrix of shape [N, C]")
     n, c = similarities.size()
     if n == 0 or c == 0:
         return similarities
@@ -588,7 +588,7 @@ def csls_adaptive(
     """Adaptive CSLS that only uses row/column density estimates to pick k."""
 
     if similarities.dim() != 2:
-        raise ValueError("Ada-CSLS期望[N, C]二维相似度矩阵")
+        raise ValueError("Ada-CSLS expects a 2-D similarity matrix of shape [N, C]")
 
     n_q, n_c = similarities.shape
     device = similarities.device
@@ -651,7 +651,7 @@ def csls_adaptive(
         hits.scatter_add_(0, col_top_idx.reshape(-1), ones.reshape(-1))
         rho_col = hits / max(1, n_q)
     except RuntimeError as err:
-        print(f"[Ada-CSLS] 列密度统计失败，退化为均匀分布: {err}")
+        print(f"[Ada-CSLS] column-density estimation failed, falling back to uniform: {err}")
         rho_col = torch.ones(n_c, dtype=dtype, device=device)
 
     if rho_col.numel() > 0:
@@ -711,7 +711,7 @@ def csls_adaptive(
             f"k_col[min/mean/max]={k_col_min}/{k_col_mean:.2f}/{k_col_max}"
         )
     except Exception as dbg_err:
-        print(f"[Ada-CSLS] Debug print失败: {dbg_err}")
+        print(f"[Ada-CSLS] debug print failed: {dbg_err}")
 
     if return_details:
         return csls_sim, details
@@ -725,13 +725,13 @@ def build_structural_expert(
     lambda_pen: Optional[float] = None,
     lambda_bonus: Optional[float] = None,
 ) -> torch.Tensor:
-    """根据 pre-CSLS 证据构造结构 expert 的 logits 矩阵。
+    """Build the structural-expert logit matrix from pre-CSLS evidence.
 
-    规则：
-    - 默认 S_struct=0；
-    - penalty_scale∈[0,1] 控制惩罚强度，直接转换成负偏置；
-    - 对可信 pair（锁定区、保护区）施加正偏置；
-    - 其他区域保持 0。
+    Rules:
+    - Default S_struct = 0;
+    - penalty_scale in [0,1] controls penalty strength (converted to a negative bias);
+    - Trusted pairs (lock zone, protection zone) receive a positive bias;
+    - All other entries remain 0.
     """
 
     if device is None:
@@ -754,14 +754,14 @@ def build_structural_expert(
     case4_mask = _to_dev(pre_csls_evidence.get("case4_mask"))
     is_mnn1_mask = _to_dev(pre_csls_evidence.get("is_mnn1"))
 
-    # 根据 S_geom 的尺度自动设置 lambda 的默认值，确保 S_struct 的变化幅度与主链路 logits 可控
-    # 目标：S_struct 的 std 大小在 S_geom.std() 的 20-50% 范围内；默认取 lambda_pen=0.5*std, lambda_bonus=0.25*std
+    # Auto-set lambda defaults from S_geom scale to keep S_struct magnitude controlled.
+    # Target: std(S_struct) in [20%, 50%] of std(S_geom); defaults: lambda_pen=0.5*std, lambda_bonus=0.25*std.
     geom_std = float(S_geom.std().item()) if S_geom.numel() > 0 else 1.0
     geom_std = max(1e-6, geom_std)
     lambda_pen = float(lambda_pen) if lambda_pen is not None else (0.5 * geom_std)
     lambda_bonus = float(lambda_bonus) if lambda_bonus is not None else (0.25 * geom_std)
 
-    # 负偏置：penalty_scale 直接转成惩罚强度
+    # Negative bias: convert penalty_scale to penalty strength.
     try:
         if penalty_scale is not None:
             if lock_mask is not None:
@@ -771,7 +771,7 @@ def build_structural_expert(
     except Exception:
         pass
 
-    # 正偏置：强保护区 -> 基础奖励；case2/3/4 -> 额外奖励
+    # Positive bias: lock zone -> base bonus; case2/3/4 -> incremental bonus.
     try:
         bonus_accumulator = torch.zeros_like(S_struct)
 
@@ -807,7 +807,7 @@ def build_structural_expert(
 
 
 def fuse_poe_scores(S_geom: torch.Tensor, S_struct: torch.Tensor, beta: float = 1.0) -> torch.Tensor:
-    """返回 PoE 融合后的 logits：S_poe = S_geom + beta * S_struct。"""
+    """Return PoE-fused logits: S_poe = S_geom + beta * S_struct."""
 
     try:
         return S_geom + float(beta) * S_struct
@@ -1711,7 +1711,7 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
 
         bg_mask_tensor = (~row_top5_mask_tensor) & (~col_topk_mask_tensor) & (~strong_protect_mask)
         if bg_mask_tensor.any():
-            # 🚨 背景区强惩罚：row>5 且 col>5 且不在任何保护区
+            #  row>5  col>5
             penalty_scale = torch.where(
                 bg_mask_tensor,
                 penalty_scale.new_tensor(bg_penalty_value),
@@ -1923,16 +1923,16 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
                     ada_metrics["k_col_mean"] = float(k_col_values.float().mean().item())
                     ada_metrics["k_col_max"] = float(k_col_values.max().item())
             except Exception as csls_err:
-                print(f"[Ada-CSLS] Warning: fallback至固定k CSLS，原因: {csls_err}")
+                print(f"[Ada-CSLS] Warning: falling back to fixed-k CSLS, reason: {csls_err}")
                 try:
                     logits_all = csls_scores(logits_all, k=csls_k)
                 except Exception as fallback_err:
-                    print(f"[CSLS] Warning: fallback至原始相似度，原因: {fallback_err}")
+                    print(f"[CSLS] Warning: falling back to raw similarity, reason: {fallback_err}")
         else:
             try:
                 logits_all = csls_scores(logits_all, k=csls_k)
             except Exception as csls_err:
-                print(f"[CSLS] Warning: fallback至原始相似度，原因: {csls_err}")
+                print(f"[CSLS] Warning: falling back to raw similarity, reason: {csls_err}")
     try:
         baseline_logits = base_logits.clone()
         if getattr(config, 'use_csls', False):
@@ -1959,14 +1959,14 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
     base_logits_cpu = base_logits.detach().cpu().to(torch.float32)
     del processed, features_all_device, similarities
 
-    # ----- PoE 融合（可选）: 把结构 expert 从 pre_csls_evidence 构造到 device 并融合回 logits -----
+    # ----- PoE ):  expert  pre_csls_evidence  device  logits -----
     try:
         if getattr(config, 'enable_poe', False):
             try:
                 if not pre_csls_evidence:
-                    print("[PoE] pre_csls_evidence 空，跳过 PoE")
+                    print("[PoE] pre_csls_evidence is empty, skipping PoE")
                 else:
-                    # S_geom 基于 CSLS 结果（当前在 CPU），搬到评估 device 上以便构造 S_struct
+                    # S_geom is based on CSLS output (currently on CPU); move to eval device.
                     S_geom = logits_all_cpu.to(device)
                     lambda_pen_cfg = getattr(config, 'poe_lambda_pen', None)
                     lambda_bonus_cfg = getattr(config, 'poe_lambda_bonus', None)
@@ -1991,11 +1991,11 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
                     except Exception:
                         pass
                     S_poe = fuse_poe_scores(S_geom, S_struct, beta=beta)
-                    # 把融合后的 logits 回搬到 CPU 供后续 evaluation 使用
+                    # Move fused logits back to CPU for downstream evaluation.
                     logits_all_cpu = S_poe.detach().cpu()
                     logits_all = logits_all_cpu
                     csls_sim_reference = logits_all_cpu.clone()
-                    # 记录 debug 信息
+                    # Record debug info.
                     try:
                         eval_debug_info.setdefault('poe', {})
                         eval_debug_info['poe']['enabled'] = True
@@ -2007,9 +2007,9 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
                     except Exception:
                         pass
             except Exception as poe_err:
-                print(f"[PoE] 构造/融合失败，跳过 PoE: {poe_err}")
+                print(f"[PoE] build/fuse failed, skipping PoE: {poe_err}")
     except Exception:
-        # 保守：任何上层错误都不会中断评估
+
         pass
 
     labels_cpu_all = labels_all.detach().cpu().to(torch.int64)
@@ -2534,7 +2534,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
     for epoch in range(config.epochs):
         encoder_display = getattr(config, 'chose_eeg_encoder', getattr(config, 'encoder_choice', 'sattc'))
         print(
-            f"[{stage.upper()}][Epoch {epoch + 1}/{config.epochs}] 当期选用EEG编码器: {encoder_display}"
+            f"[{stage.upper()}][Epoch {epoch + 1}/{config.epochs}] EEG encoder: {encoder_display}"
         )
         setattr(config, '_current_epoch', int(epoch))
         train_sample_count = None
@@ -2755,7 +2755,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                     except Exception as save_err:
                         print(f"Warning: failed to store tune checkpoint at {tune_checkpoint_path}: {save_err}")
                 tune_best_epoch = epoch + 1
-                tune_epoch_note = (f"[EarlyStop] ✅ Top-5@200 improved to {metric_value:.4f} (epoch {epoch + 1}); patience reset")
+                tune_epoch_note = (f"[EarlyStop]  Top-5@200 improved to {metric_value:.4f} (epoch {epoch + 1}); patience reset")
             else:
                 tune_stale_epochs += 1
                 if tune_best_metric > -float('inf'):
@@ -2764,7 +2764,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                 else:
                     delta_text = "delta=N/A"
                 patience_text = f"{tune_stale_epochs}/{tune_patience}" if tune_patience else "∞"
-                tune_epoch_note = (f"[EarlyStop] ⏳ No improvement ({delta_text}); patience {patience_text}")
+                tune_epoch_note = (f"[EarlyStop]  No improvement ({delta_text}); patience {patience_text}")
             if current_lr is not None:
                 tune_prev_lr = current_lr
             if (epoch + 1) >= tune_min_epochs and tune_patience > 0 and tune_stale_epochs >= tune_patience:
@@ -2773,7 +2773,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                 if tune_epoch_note:
                     tune_epoch_note += " -> early-stop condition met; will exit after this epoch"
                 else:
-                    tune_epoch_note = "[EarlyStop] ⛔ Early-stop condition met; will exit after this epoch"
+                    tune_epoch_note = "[EarlyStop]  Early-stop condition met; will exit after this epoch"
                 tune_break_after_epoch = True
 
         # If the test accuracy of the current epoch is the best, save the model and related information
@@ -2847,13 +2847,13 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
         if stage == 'final':
             print(f"             - v2 Accuracy:{v2_acc} - v4 Accuracy:{v4_acc} - v10 Accuracy:{v10_acc} - v50 Accuracy:{v50_acc} - v100 Accuracy:{v100_acc}")
         
-        print(f"             - Test Loss: {test_loss:.4f}, Test Accuracy(Top-1): {test_accuracy:.4f}, 🎯Top-5 Accuracy: {top5_acc:.4f}")
+        print(f"             - Test Loss: {test_loss:.4f}, Test Accuracy(Top-1): {test_accuracy:.4f}, Top-5 Accuracy: {top5_acc:.4f}")
         if stage == 'tune' and tune_early_stop_enabled:
             if tune_best_metric > -float('inf'):
                 best_metric_text = f"{tune_best_metric:.4f}"
                 best_epoch_text = str(tune_best_epoch)
             else:
-                best_metric_text = "未刷新"
+                best_metric_text = "no improvement"
                 best_epoch_text = "-"
             patience_text = f"{tune_stale_epochs}/{tune_patience}" if tune_patience else "∞"
             early_stop_status_line = (
@@ -2885,7 +2885,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
             }
             if stage == 'final' and best_checkpoint_path is not None:
                 torch.save(eeg_model.state_dict(), best_checkpoint_path)
-                print(f"             - ✅ Saved best Top-5 checkpoint to {best_checkpoint_path}")
+                print(f"             -  Saved best Top-5 checkpoint to {best_checkpoint_path}")
         print(f"            {'─' * 110}")
         if tune_break_after_epoch:
             break
@@ -3086,10 +3086,10 @@ def _run_training_pipeline():
     register_eeg_encoder_arg(parser)
     parser.add_argument('--temp', type=float, default=1.0, help='Temperature scaling applied before CSLS/logit evaluation')
     # Diagnostic dump settings
-    parser.add_argument('--diag_dump_dir', type=str, default="./Retrieval/outputs/diagnosis", help='可选：每个epoch导出原始相似度快照供离线诊断')
-    parser.add_argument('--diag_dump_limit', type=int, default=0, help='限制导出epoch数量（0表示全部导出）')
-    parser.add_argument('--diag_dump_prefix', type=str, default='epoch', help='诊断快照文件名前缀（默认epoch）')
-    parser.add_argument('--diag_dump_keep_post', action='store_true', help='诊断快照中同时保存Ada-CSLS后的相似度矩阵')
+    parser.add_argument('--diag_dump_dir', type=str, default="./Retrieval/outputs/diagnosis", help='Optional: export raw similarity snapshots per epoch for offline diagnosis')
+    parser.add_argument('--diag_dump_limit', type=int, default=0, help='Limit number of exported epochs (0 = all)')
+    parser.add_argument('--diag_dump_prefix', type=str, default='epoch', help='Filename prefix for diagnostic snapshots (default: epoch)')
+    parser.add_argument('--diag_dump_keep_post', action='store_true', help='Also save post-Ada-CSLS similarity matrices in snapshots')
     # DataLoader settings
     parser.add_argument('--num_workers', type=int, default=4, help='DataLoader workers for train/val/test')
     parser.add_argument('--prefetch_factor', type=int, default=2, help='DataLoader prefetch factor when num_workers>0')
@@ -3277,7 +3277,7 @@ def _run_training_pipeline():
             train_subjects_fold = split.get('train_subjects', [])
             val_unseen = split.get('val_unseen_classes', [])
             fold_subjects = sorted(set(train_subjects_fold + dev_subjects + [test_subject]))
-            print("\n📋 Experiment Configuration (split mode):")
+            print("\n Experiment Configuration (split mode):")
             print(f"   Fold test subject: {test_subject}")
             print(f"   Train subjects (tune core): {train_subjects_fold}")
             print(f"   Dev pack subjects: {dev_subjects}")
@@ -3313,7 +3313,7 @@ def _run_training_pipeline():
             else:
                 subjects_to_train = base_subjects
 
-            print(f"\n📋 Experiment Configuration (LOSO mode):")
+            print(f"\n Experiment Configuration (LOSO mode):")
             print(f"   Train/Test subjects: {subjects_to_train}")
             if not args.insubject:
                 print(f"   Validation subject (tune stage): {args.val_subject}")
@@ -3594,7 +3594,7 @@ def _run_training_pipeline():
                         del tune_train_dataset
                         del tune_val_dataset
                         force_ram_cleanup()
-                        print("[Tune] 已强制回收内存与显存缓存。")
+                        print("[Tune] Memory and CUDA cache cleared.")
                 else:
                     print("Tune stage skipped based on configuration.")
 
@@ -3611,7 +3611,7 @@ def _run_training_pipeline():
                 final_model.to(device)
                 optimizer_final = AdamW(itertools.chain(final_model.parameters()), lr=args.lr)
 
-                print(f"\n{'='*60}\n开始Final阶段训练\n{'='*60}")
+                print(f"\n{'='*60}\nFinal stage training started\n{'='*60}")
                 final_stage_start = time.time()
 
                 if args.insubject:
@@ -3777,12 +3777,12 @@ def _run_training_pipeline():
                 del final_train_dataset
                 del final_test_dataset
                 force_ram_cleanup()
-                print("[Final] 已强制回收内存与显存缓存。")
+                print("[Final] Memory and CUDA cache cleared.")
             except Exception as e:
                 print(f"Error during training for {sub}: {str(e)}")
                 raise
             except KeyboardInterrupt:
-                print("⚠️ KeyboardInterrupt detected. Clearing memory before exit...")
+                print("️ KeyboardInterrupt detected. Clearing memory before exit...")
                 clear_memory()
                 raise
             finally:
@@ -3798,18 +3798,18 @@ def _run_training_pipeline():
 
 def main():
     overall_start_time = time.time()
-    status_label = "完成"
+    status_label = "completed"
     try:
         _run_training_pipeline()
     except KeyboardInterrupt:
-        status_label = "中断"
+        status_label = "interrupted"
         raise
     except Exception:
-        status_label = "异常"
+        status_label = "error"
         raise
     finally:
         elapsed = time.time() - overall_start_time
-        print(f"\n⏱️ 总运行时长（{status_label}）: {format_duration_hm(elapsed)}")
+        print(f"\n️ Total runtime ({status_label}): {format_duration_hm(elapsed)}")
 
 
 if __name__ == '__main__':
