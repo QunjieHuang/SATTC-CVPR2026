@@ -5,7 +5,7 @@ title: "SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subjec
 version: "1.0.0"
 date-released: "2026-03-19"
 license: MIT
-repository-code: "https://github.com/PLACEHOLDER/SATTC-CVPR2026"
+repository-code: "https://github.com/QunjieHuang/SATTC-CVPR2026"
 
 authors:
   - family-names: "Huang"

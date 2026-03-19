@@ -141,16 +141,19 @@ SATTC-CVPR2026/
 │   ├── contrast_retrieval.py     #   Baseline encoder comparison
 │   ├── eegdatasets_leaveone.py   #   LOSO dataset loader
 │   ├── split_generator.py        #   Cross-validation split generator
-│   ├── loss.py                   #   Loss functions
-│   ├── metrics.py                #   Evaluation metrics
-│   ├── scoring.py                #   Scoring utilities
-│   ├── eval_runner.py            #   Evaluation runner
 │   ├── fold_aggregate.py         #   Fold-level result aggregation
-│   ├── best_val_evaluator.py     #   Best-validation evaluator
+│   ├── mnn_pre_check.py          #   MNN diagnostics (used by main pipeline)
+│   ├── soft_mnn.py               #   Soft-MNN utilities
+│   ├── loss.py                   #   Loss functions
 │   ├── util.py                   #   General utilities
 │   ├── data_config.json          #   Data path configuration
-│   ├── subject_layers/           #   Transformer & attention modules
-│   └── utils/                    #   Additional utility modules
+│   ├── subject_layers/           #   iTransformer backbone modules
+│   │   ├── Transformer_EncDec.py
+│   │   ├── SelfAttention_Family.py
+│   │   └── Embed.py
+│   └── utils/                    #   CLI argument helpers
+│       ├── cli_args.py
+│       └── masking.py
 ├── EEG-preprocessing/            # Raw EEG preprocessing scripts
 │   ├── preprocessing.py
 │   └── preprocessing_utils.py
