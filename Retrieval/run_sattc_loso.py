@@ -1,11 +1,8 @@
 # =================================================================================
 # 2025.10.17 v1.5baselinecosdot
 
-# seed42340720251
-# dot
-
-
 # =================================================================================
+# v2
 # v2
 # v2: subject_ids
 
@@ -1053,7 +1050,7 @@ class SATTC(nn.Module):
         self.loss_func = ClipLoss()
         self.subject_wise_linear = None
 
-        if self.encoder_choice in ('sattc', 'atm'):
+        if self.encoder_choice in ('sattc', 'itransformer'):
             default_config = Config()
             default_config.use_subject_unk = use_subject_unk
             self.encoder = iTransformer(default_config, num_subjects=num_subjects, use_subject_unk=use_subject_unk)
@@ -1085,7 +1082,7 @@ class SATTC(nn.Module):
 
     def forward(self, x, subject_ids=None):
         x = x.float()
-        if self.encoder_choice in ('sattc', 'atm'):
+        if self.encoder_choice in ('sattc', 'itransformer'):
             encoded = self.encoder(x, None, subject_ids)
             eeg_embedding = self.enc_eeg(encoded)
         else:
@@ -3038,8 +3035,8 @@ def _run_training_pipeline():
     parser.add_argument('--data_path', type=str, default="../eeg_dataset/Preprocessed_data_250Hz", help='Path to the EEG dataset')
     default_output = './outputs/contrast'
     parser.add_argument('--output_dir', type=str, default=default_output, help='Directory to save output results')
-    parser.add_argument('--exp_id', type=str, default="run_sattc_loso_conformer_sattc_42", help='Custom experiment identifier for output folder naming')
-    parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility (default: 42,3407,20251)')    
+    parser.add_argument('--exp_id', type=str, default="run_sattc_loso_sattc", help='Custom experiment identifier for output folder naming')
+    parser.add_argument('--seed', type=int, default=None, help='Random seed for reproducibility (optional; omit for non-deterministic runs)')
     parser.add_argument('--project', type=str, default="train_pos_img_text_rep", help='WandB project name')
     parser.add_argument('--entity', type=str, default="sustech_rethinkingbci", help='WandB entity name')
     parser.add_argument('--name', type=str, default="lr=5e-4_img_pos_pro_eeg", help='Experiment name')
@@ -3203,7 +3200,8 @@ def _run_training_pipeline():
             )
         )
 
-    set_seed(args.seed)
+    if args.seed is not None:
+        set_seed(args.seed)
 
     args.eval_batch_size = max(1, args.eval_batch_size)
 
@@ -3536,7 +3534,7 @@ def _run_training_pipeline():
                                 tune_epoch_limit = max(epoch_candidates)
 
                             tune_results_file = os.path.join(
-                                results_dir, f"{args.encoder_type}_{sub}_tune_seed{args.seed}.csv"
+                                results_dir, f"{args.encoder_type}_{sub}_tune.csv"
                             )
                             with open(tune_results_file, 'w', newline='') as file:
                                 writer = csv.DictWriter(file, fieldnames=tune_results[0].keys())
@@ -3696,7 +3694,7 @@ def _run_training_pipeline():
                     subject_tag = re.sub(r"[^0-9A-Za-z_-]+", "-", str(sub)).strip('-_') or 'subject'
                     final_results_file = os.path.join(
                         results_dir,
-                        f"final_{args.encoder_type}_{subject_tag}_seed{args.seed}.csv",
+                        f"final_{args.encoder_type}_{subject_tag}.csv",
                     )
 
                     with open(final_results_file, 'w', newline='') as file:

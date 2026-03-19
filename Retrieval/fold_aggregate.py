@@ -12,7 +12,7 @@ Expected layout (per subject, per run timestamp):
 
 Usage examples:
   python fold_aggregate.py \
-    --root outputs/iTransformer \
+    --root outputs/sattc \
     --stage final \
     --pattern final_summary.json \
     --out_csv outputs/aggregate_final.csv

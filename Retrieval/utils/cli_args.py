@@ -45,7 +45,7 @@ _STRUCTURAL_DEFAULTS: Dict[str, Any] = {
     "poe_lambda_bonus": None,
 }
 
-_EEG_ENCODER_CHOICES = ("atm", "eegnet", "shallow", "conformer")
+_EEG_ENCODER_CHOICES = ("itransformer", "eegnet", "shallow", "conformer")
 
 
 def get_ada_csls_defaults(overrides: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -61,7 +61,7 @@ def get_ada_csls_defaults(overrides: Optional[Dict[str, Any]] = None) -> Dict[st
 def register_eeg_encoder_arg(
     parser: ArgumentParser,
     *,
-    default: str = "atm",
+    default: str = "itransformer",
 ) -> ArgumentParser:
     """Register the EEG encoder selection argument.
 
@@ -74,7 +74,7 @@ def register_eeg_encoder_arg(
         type=lambda value: str(value).strip().lower(),
         choices=_EEG_ENCODER_CHOICES,
         default=default,
-        help="Select EEG encoder backbone (atm, eegnet, shallow, conformer)",
+        help="Select EEG encoder backbone (itransformer, eegnet, shallow, conformer)",
     )
     return parser
 

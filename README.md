@@ -4,7 +4,7 @@
 
 **CVPR 2026**
 
-[Qunjie Huang](mailto:huangqunjie@stu.ynu.edu.cn) · [Weina Zhu](mailto:zhuweina@ynu.edu.cn)<sup>✉</sup>
+[Qunjie Huang](mailto:huangqunjie@stu.ynu.edu.cn) · [Weina Zhu](mailto:zhuweina@ynu.edu.cn)<sup>*</sup>
 
 Yunnan University, China
 
@@ -19,7 +19,7 @@ Yunnan University, China
 
 ## Abstract
 
-Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subject shift** and **hubness** in the embedding space, which distort similarity geometry and destabilize top-*k* rankings, making small-*k* shortlists unreliable. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free calibration head that operates directly on the similarity matrix of frozen EEG and image encoders. SATTC combines a **geometric expert**—subject-adaptive whitening of EEG embeddings with an adaptive variant of Cross-domain Similarity Local Scaling (CSLS)—and a **structural expert** built from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused via a simple Product-of-Experts rule. On THINGS-EEG under a strict leave-one-subject-out protocol, standardized inference with cosine similarities, ℓ₂-normalized embeddings, and candidate whitening already yields a strong cross-subject baseline over the original ATM retrieval setup. Building on this baseline, SATTC further improves Top-1 and Top-5 accuracy, reduces hubness and per-class imbalance, and produces more reliable small-*k* shortlists. These gains transfer across multiple EEG encoders, supporting SATTC as an encoder-agnostic, label-free test-time calibration layer for cross-subject neural decoding.
+Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subject shift** and **hubness** in the embedding space, which distort similarity geometry and destabilize top-*k* rankings, making small-*k* shortlists unreliable. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free calibration head that operates directly on the similarity matrix of frozen EEG and image encoders. SATTC combines a **geometric expert**—subject-adaptive whitening of EEG embeddings with an adaptive variant of Cross-domain Similarity Local Scaling (CSLS)—and a **structural expert** built from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused via a simple Product-of-Experts rule. On THINGS-EEG under a strict leave-one-subject-out protocol, standardized inference with cosine similarities, ℓ₂-normalized embeddings, and candidate whitening already yields a strong cross-subject baseline. Building on this baseline, SATTC further improves Top-1 and Top-5 accuracy, reduces hubness and per-class imbalance, and produces more reliable small-*k* shortlists. These gains transfer across multiple EEG encoders, supporting SATTC as an encoder-agnostic, label-free test-time calibration layer for cross-subject neural decoding.
 
 <!-- Framework figure — uncomment when figure is added to repo:
 <p align="center">
@@ -147,7 +147,7 @@ SATTC-CVPR2026/
 │   ├── loss.py                   #   Loss functions
 │   ├── util.py                   #   General utilities
 │   ├── data_config.json          #   Data path configuration
-│   ├── subject_layers/           #   iTransformer backbone modules
+│   ├── subject_layers/           #   EEG encoder backbone modules
 │   │   ├── Transformer_EncDec.py
 │   │   ├── SelfAttention_Family.py
 │   │   └── Embed.py
@@ -180,7 +180,6 @@ If you find this work useful, please cite:
 
 We thank the authors of the following works for their open-source contributions:
 
-- [ATM / Visual Decoding via EEG Embeddings](https://arxiv.org/abs/2403.07721) — Li et al., NeurIPS 2024
 - [THINGS-EEG Dataset](https://www.sciencedirect.com/science/article/pii/S1053811922008758) — Gifford et al.
 - [EEG Natural Image Decoding](https://arxiv.org/abs/2308.13234) — Song et al.
 
