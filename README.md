@@ -96,7 +96,7 @@ cd Retrieval/
 python run_sattc_loso.py \
     --logger True \
     --gpu cuda:0 \
-    --batch_size 256 \
+    --batch_size 1024 \
     --output_dir ./outputs/loso_sattc
 ```
 

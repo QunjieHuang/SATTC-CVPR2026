@@ -7,11 +7,11 @@ from torch.nn import functional as F
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-os.environ["WANDB_API_KEY"] = "KEY"
-os.environ["WANDB_MODE"] = 'offline'
+# Set WANDB_API_KEY in your environment before running, e.g.:
+#   export WANDB_API_KEY=<your_key>
+os.environ.setdefault("WANDB_MODE", "offline")
 from itertools import combinations
 
-import clip
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn as nn
@@ -23,7 +23,7 @@ from loss import ClipLoss
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader, Dataset
 import random
-from utils import wandb_logger
+from util import wandb_logger
 import csv
 from braindecode.models import EEGNetv4, ATCNet, EEGConformer, EEGITNet, ShallowFBCSPNet
 import argparse
@@ -762,7 +762,7 @@ def main_train_loop(sub, model, train_dataloader, test_dataloader, optimizer, de
 def main():
     parser = argparse.ArgumentParser(description='Train EEG-Image/Text Model')
 
-    parser.add_argument('--data_path', type=str, default="/home/ldy/Workspace/THINGS/Preprocessed_data_250Hz", help='Path to the preprocessed data')
+    parser.add_argument('--data_path', type=str, default="../eeg_dataset/Preprocessed_data_250Hz", help='Path to the preprocessed EEG data')
     parser.add_argument('--project', type=str, default="train_pos_img_text_rep", help='Project name')
     parser.add_argument('--entity', type=str, default="sustech_rethinkingbci", help='Entity name')
     parser.add_argument('--name', type=str, default="lr=3e-4_img_pos_pro_eeg", help='Experiment name')

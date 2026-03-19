@@ -1,6 +1,6 @@
 {
-    "data_path": "eeg_dataset/preprocessed_data/Preprocessed_data_250Hz",
-    "img_directory_training": "image_set/training_images",
-    "img_directory_test": "image_set/test_images",
-    "features_path":"."
+    "data_path": "../eeg_dataset/Preprocessed_data_250Hz",
+    "img_directory_training": "../image_set/training_images",
+    "img_directory_test": "../image_set/test_images",
+    "features_path": ".."
 }
