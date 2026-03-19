@@ -147,7 +147,7 @@ class SubjectEmbedding(nn.Module):
 #         return self.dropout(x)
 
 class DataEmbedding(nn.Module):
-    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1, joint_train=False, num_subjects=None):
+    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1, joint_train=False, num_subjects=None, use_subject_unk=False):
         super(DataEmbedding, self).__init__()
         if joint_train and num_subjects is not None:
             self.value_embedding = nn.ModuleDict({
