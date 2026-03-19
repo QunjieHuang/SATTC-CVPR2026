@@ -1,34 +1,44 @@
-<div align="center">
+<h1 align="center">SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subject EEG-to-Image Retrieval</h1>
 
-# SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subject EEG-to-Image Retrieval
+<p align="center">
+  <img src="https://img.shields.io/badge/CVPR-2026-blue" alt="CVPR 2026">
+  <img src="https://img.shields.io/badge/Status-Official%20Repo-success" alt="Official Repo">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
+  <!-- Uncomment when arXiv is live:
+  <a href="https://arxiv.org/abs/XXXX.XXXXX"><img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b" alt="arXiv"></a>
+  -->
+</p>
 
-**CVPR 2026**
+<p align="center">
+  <a href="mailto:huangqunjie@stu.ynu.edu.cn">Qunjie Huang</a>
+  ·
+  <a href="mailto:zhuweina@ynu.edu.cn">Weina Zhu</a><sup>*</sup>
+</p>
 
-[Qunjie Huang](mailto:huangqunjie@stu.ynu.edu.cn) · [Weina Zhu](mailto:zhuweina@ynu.edu.cn)<sup>*</sup>
+<p align="center">
+  Yunnan University, China
+</p>
 
-Yunnan University, China
-
-<!-- Uncomment when available:
-[![Paper](http://img.shields.io/badge/Paper-arxiv.XXXX.XXXXX-B31B1B.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-[![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://your-project-page.github.io)
--->
-
-</div>
+<p align="center">
+  <sup>*</sup> Corresponding author
+</p>
 
 ---
 
 ## Abstract
 
-Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subject shift** and **hubness** in the embedding space, which distort similarity geometry and destabilize top-*k* rankings, making small-*k* shortlists unreliable. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free calibration head that operates directly on the similarity matrix of frozen EEG and image encoders. SATTC combines a **geometric expert**—subject-adaptive whitening of EEG embeddings with an adaptive variant of Cross-domain Similarity Local Scaling (CSLS)—and a **structural expert** built from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused via a simple Product-of-Experts rule. On THINGS-EEG under a strict leave-one-subject-out protocol, standardized inference with cosine similarities, ℓ₂-normalized embeddings, and candidate whitening already yields a strong cross-subject baseline. Building on this baseline, SATTC further improves Top-1 and Top-5 accuracy, reduces hubness and per-class imbalance, and produces more reliable small-*k* shortlists. These gains transfer across multiple EEG encoders, supporting SATTC as an encoder-agnostic, label-free test-time calibration layer for cross-subject neural decoding.
+Cross-subject EEG-to-image retrieval is challenged by **subject shift** and **hubness**, which distort similarity geometry and destabilize top-*k* rankings. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free framework that calibrates the similarity matrix of frozen EEG and image encoders at test time. SATTC combines a **geometric expert**—subject-adaptive whitening with adaptive CSLS—and a **structural expert** derived from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused through a simple Product-of-Experts rule. Under strict leave-one-subject-out evaluation on **THINGS-EEG**, SATTC consistently improves Top-1/Top-5 retrieval, reduces hubness and class imbalance, and produces more reliable small-*k* shortlists across multiple EEG encoders.
 
 <p align="center">
-  <img src="assets/fig-framework.png" width="90%"/>
+  <img src="assets/fig-framework.png" width="82%"/>
 </p>
 
 ## News
 
 - **[2026/03]** Code released for SATTC.
-<!-- - **[2026/XX]** Paper accepted to CVPR 2026. -->
+<!-- - **[2026/03]** CVPR 2026 camera-ready submission completed.
+- **[2026/03]** arXiv version available. -->
+
 
 ## Installation
 
@@ -36,7 +46,7 @@ Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subj
 
 - Python ≥ 3.10
 - PyTorch ≥ 2.0 with CUDA support
-- GPU: ≥ 16 GB VRAM (tested on RTX 4090)
+- GPU: ≥ 16 GB VRAM recommended (paper experiments run on RTX 4090, 24 GB)
 - **CPU RAM: ≥ 36 GB** — each training subject uses ~4.2 GB; full 9-subject LOSO requires ~38 GB at peak during dataset loading. Reduce the subject list (`--subjects`) if RAM is limited.
 - See [`requirements.txt`](requirements.txt) for full list
 
@@ -98,7 +108,7 @@ python run_sattc_loso.py \
     --output_dir ./outputs/loso_sattc
 ```
 
-This reproduces the paper's LOSO protocol: each of `sub-01` – `sub-10` is held out as the test subject in turn, with the remaining 9 subjects used for training. Results are aggregated across all folds.
+This command runs the LOSO evaluation pipeline used in the paper under the default SATTC configuration. Full paper results are obtained by evaluating all held-out subjects and aggregating all folds. Each of `sub-01` – `sub-10` is held out as the test subject in turn, with the remaining 9 subjects used for training. Results are aggregated across all folds.
 
 To ablate individual components:
 
