@@ -1,13 +1,11 @@
 """Soft-MNN helper utilities.
 
-This module provides reusable building blocks to move from aTop-K
-hubSoft-MNN
+This module provides reusable building blocks for Soft-MNN scoring:
 
-1. / (percentile)/
-2. “”“Top-L”hub
-3. γsoft
+1. percentile_from_rank: converts 1-based ranks into [0,1] percentiles.
+2. Top-L hub counting and popularity estimation.
+3. Soft-MNN bundle (soft_mnn_bundle): full scoring pipeline.
 
-/
 """
 
 from __future__ import annotations
@@ -127,7 +125,7 @@ def tolerance_weight(
 
 	Args:
 		forward_percentiles: pi_f tensor.
-		reverse_percentiles_soft: \~π_r tensor ( hub )
+		reverse_percentiles_soft: \~pi_r tensor ( hub )
 		delta_tol: Tolerance window delta.
 		tau_delta: Decay scale tau_delta.
 	"""

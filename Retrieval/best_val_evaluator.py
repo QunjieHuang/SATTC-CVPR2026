@@ -120,7 +120,7 @@ def best_val_train_loop(sub, current_time, eeg_model, train_dataloader, val_data
             text_features_train_all, img_features_train_all, config=config
         )
         
-        # Validation phase — use Top-5 as the selection criterion.
+        # Validation phase - use Top-5 as the selection criterion.
         val_loss, val_top1, val_top5 = evaluate_model(
             sub, eeg_model, val_dataloader, device, 
             text_features_train_all, img_features_train_all, k=200, config=config

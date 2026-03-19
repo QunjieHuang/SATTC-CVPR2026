@@ -4,15 +4,15 @@
 Split Generator for Double Zero-Shot Nested Validation (LOSO + dev-pack + val-unseen)
 
 Per outer fold (test subject):
-  1) Compute 9×9 subject distance matrix using per-subject centers from training data only
-  2) Select dev-pack = [easy, medium, hard] via mean distance µ(s)
+  1) Compute 9x9 subject distance matrix using per-subject centers from training data only
+  2) Select dev-pack = [easy, medium, hard] via mean distance u(s)
   3) Sample val-unseen classes (e.g., 200 from 0..1653) with fixed seed
   4) Write split JSON under splits/
 
 Notes
 - Subject center for a subject s is computed from s's training file only (preprocessed_eeg_training.npy / .npz)
 - No cross-subject fitting; only per-subject normalization allowed (here we simply average trials)
-- Distance metric: Euclidean on flattened center vectors (63×250 → 15750)
+- Distance metric: Euclidean on flattened center vectors (63x250 -> 15750)
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ def pairwise_euclidean(X: np.ndarray) -> np.ndarray:
     X: (n, d)
     Return: (n, n) symmetric, diag=0
     """
-    # (x - y)^2 = x^2 + y^2 - 2 x·y
+    # (x - y)^2 = x^2 + y^2 - 2 x*y
     g = np.sum(X * X, axis=1, keepdims=True)  # (n,1)
     D2 = g + g.T - 2.0 * (X @ X.T)
     D2 = np.maximum(D2, 0.0)
@@ -112,17 +112,17 @@ def pairwise_euclidean(X: np.ndarray) -> np.ndarray:
 
 
 def select_dev_pack(candidates: List[str], D: np.ndarray, eps: float = 1e-6) -> Tuple[str, str, str]:
-    """Select (easy, medium, hard) from candidates using 9×9 distance matrix D.
+    """Select (easy, medium, hard) from candidates using 9x9 distance matrix D.
 
     candidates: list of subject IDs in fixed order (length=9)
-    D: 9×9 matrix where D[i,j] is distance between candidates[i] and candidates[j]
+    D: 9x9 matrix where D[i,j] is distance between candidates[i] and candidates[j]
     """
     assert len(candidates) == D.shape[0] == D.shape[1], "Candidates and D size mismatch"
 
-    # mean distance µ(s)
+    # mean distance u(s)
     mu = np.array([(np.sum(D[i]) - D[i, i]) / (len(candidates) - 1) for i in range(len(candidates))])
 
-    # easy = argmin µ(s)
+    # easy = argmin u(s)
     min_val = mu.min()
     easy_idxs = np.where(np.abs(mu - min_val) <= eps)[0]
     # stable tie-break by sorted subject id order
@@ -134,7 +134,7 @@ def select_dev_pack(candidates: List[str], D: np.ndarray, eps: float = 1e-6) -> 
         easy_idx = int(easy_idxs[0])
         easy = candidates[easy_idx]
 
-    # hard = argmax µ(s)
+    # hard = argmax u(s)
     max_val = mu.max()
     hard_idxs = np.where(np.abs(mu - max_val) <= eps)[0]
     if len(hard_idxs) > 1:
@@ -145,7 +145,7 @@ def select_dev_pack(candidates: List[str], D: np.ndarray, eps: float = 1e-6) -> 
         hard_idx = int(hard_idxs[0])
         hard = candidates[hard_idx]
 
-    # medium: remove easy & hard, pick closest to median(µ)
+    # medium: remove easy & hard, pick closest to median(u)
     remaining = [i for i in range(len(candidates)) if i not in {easy_idx, hard_idx}]
     mu_remaining = mu[remaining]
     med = float(np.median(mu_remaining))
@@ -199,7 +199,7 @@ def generate_fold_split(
         centers.append(c)
     X = np.stack(centers, axis=0)  # (9, d)
 
-    # 9×9 distance matrix
+    # 9x9 distance matrix
     D = pairwise_euclidean(X)
 
     # Select dev-pack
@@ -207,7 +207,7 @@ def generate_fold_split(
     dev_subjects = [easy, medium, hard]
     train_subjects = [s for s in candidates if s not in dev_subjects]
 
-    # Compute µ(s) for reporting
+    # Compute u(s) for reporting
     mu = {}
     for i, s in enumerate(candidates):
         mu[s] = float((np.sum(D[i]) - D[i, i]) / (len(candidates) - 1))
@@ -217,7 +217,7 @@ def generate_fold_split(
 
     notes = (
         "Fold-specific 9x9 subject distance computed using per-subject training centers; "
-        "dev-pack selected as [easy(min µ), medium(closest to median µ), hard(max µ)]."
+        "dev-pack selected as [easy(min u), medium(closest to median u), hard(max u)]."
     )
 
     return SplitFold(

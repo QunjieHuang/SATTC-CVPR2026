@@ -3,7 +3,7 @@
 """
 Quick sanity check for split-driven tune pipeline:
 - Reads split JSON
-- Builds train (6×1454 classes) and val (3×200 classes, train-gallery) datasets
+- Builds train (6x1454 classes) and val (3x200 classes, train-gallery) datasets
 - Iterates 1-2 batches and prints shapes and class counts
 """
 import argparse
