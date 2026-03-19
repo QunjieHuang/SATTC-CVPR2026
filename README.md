@@ -38,6 +38,8 @@ Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subj
 
 - Python ≥ 3.10
 - PyTorch ≥ 2.0 with CUDA support
+- GPU: ≥ 16 GB VRAM (tested on RTX 4080 Super)
+- **CPU RAM: ≥ 36 GB** — each training subject uses ~4.2 GB; full 9-subject LOSO requires ~38 GB at peak during dataset loading. Reduce the subject list (`--subjects`) if RAM is limited.
 - See [`requirements.txt`](requirements.txt) for full list
 
 ### Quick Setup
@@ -87,12 +89,37 @@ python preprocessing.py
 
 ### EEG-to-Image Retrieval (Leave-One-Subject-Out)
 
+Run the full LOSO evaluation with all SATTC components (SAW, CSLS, Ada-CSLS, PoE are **enabled by default**):
+
 ```bash
 cd Retrieval/
 python run_sattc_loso.py \
     --logger True \
     --gpu cuda:0 \
-    --output_dir ./outputs/contrast
+    --batch_size 256 \
+    --output_dir ./outputs/loso_sattc
+```
+
+This reproduces the paper's LOSO protocol: each of `sub-01` – `sub-10` is held out as the test subject in turn, with the remaining 9 subjects used for training.  Results are aggregated across all folds.
+
+Expected performance (THINGS-EEG, 200-way retrieval):
+
+| Method | Top-1 | Top-5 |
+|--------|------:|------:|
+| Baseline (cosine, ℓ₂-norm) | ~8% | ~27% |
+| **SATTC (SAW + Ada-CSLS + PoE)** | **~13%** | **~37.5%** |
+
+To ablate individual components:
+
+```bash
+# Disable SAW (Subject-Adaptive Whitening)
+python run_sattc_loso.py --no_saw ...
+
+# Disable CSLS / Ada-CSLS
+python run_sattc_loso.py --no_csls ...
+
+# Disable Product-of-Experts fusion
+python run_sattc_loso.py --disable_poe ...
 ```
 
 ### Baseline Comparison (e.g., EEGNetV4)

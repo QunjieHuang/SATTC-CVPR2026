@@ -11,8 +11,8 @@ import numpy as np
 
 
 _CANONICAL_DEFAULTS: Dict[str, Any] = {
-    "use_csls": False,
-    "use_ada_csls": False,
+    "use_csls": True,
+    "use_ada_csls": True,
     "csls_k": 12,
     "csls_kmin": 5,
     "csls_kmax": 20,
@@ -39,7 +39,7 @@ _STRUCTURAL_DEFAULTS: Dict[str, Any] = {
     "pre_csls_case6_penalty_high": 0.5,
     "pre_csls_case6_penalty_mid": 0.25,
     # PoE
-    "enable_poe": False,
+    "enable_poe": True,
     "poe_beta": 1.9,
     "poe_lambda_pen": None,
     "poe_lambda_bonus": None,
@@ -92,15 +92,29 @@ def register_ada_csls_args(
     if include_use_flags:
         parser.add_argument(
             "--use_csls",
+            dest="use_csls",
             action="store_true",
             default=merged["use_csls"],
-            help="Enable CSLS re-ranking during evaluation",
+            help="Enable CSLS re-ranking during evaluation (default: on)",
+        )
+        parser.add_argument(
+            "--no_csls",
+            dest="use_csls",
+            action="store_false",
+            help="Disable CSLS re-ranking",
         )
         parser.add_argument(
             "--use_ada_csls",
+            dest="use_ada_csls",
             action="store_true",
             default=merged["use_ada_csls"],
-            help="Enable Selective Ada-CSLS (requires --use_csls)",
+            help="Enable Selective Ada-CSLS (requires --use_csls; default: on)",
+        )
+        parser.add_argument(
+            "--no_ada_csls",
+            dest="use_ada_csls",
+            action="store_false",
+            help="Disable Selective Ada-CSLS",
         )
 
     parser.add_argument(
@@ -251,9 +265,16 @@ def register_structural_args(
     )
     parser.add_argument(
         "--enable_poe",
+        dest="enable_poe",
         action="store_true",
         default=merged["enable_poe"],
-        help="Enable Product-of-Experts fusion between CSLS logits and structural expert",
+        help="Enable Product-of-Experts fusion between CSLS logits and structural expert (default: on)",
+    )
+    parser.add_argument(
+        "--disable_poe",
+        dest="enable_poe",
+        action="store_false",
+        help="Disable Product-of-Experts fusion",
     )
     parser.add_argument(
         "--poe_beta",

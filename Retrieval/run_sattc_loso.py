@@ -1053,7 +1053,7 @@ class SATTC(nn.Module):
         self.loss_func = ClipLoss()
         self.subject_wise_linear = None
 
-        if self.encoder_choice == 'sattc':
+        if self.encoder_choice in ('sattc', 'atm'):
             default_config = Config()
             default_config.use_subject_unk = use_subject_unk
             self.encoder = iTransformer(default_config, num_subjects=num_subjects, use_subject_unk=use_subject_unk)
@@ -1085,7 +1085,7 @@ class SATTC(nn.Module):
 
     def forward(self, x, subject_ids=None):
         x = x.float()
-        if self.encoder_choice == 'sattc':
+        if self.encoder_choice in ('sattc', 'atm'):
             encoded = self.encoder(x, None, subject_ids)
             eeg_embedding = self.enc_eeg(encoded)
         else:
@@ -3060,7 +3060,8 @@ def _run_training_pipeline():
     parser.add_argument('--test_subject_ids', type=str, choices=['target', 'fixed1', 'unk_avg', 'unk_learned'], default='unk_learned', help='Evaluation subject ID policy')
     parser.add_argument('--subject_dropout_p', type=float, default=0.4, help='Probability of replacing training subject IDs with UNK token when available')
     # saw settings
-    parser.add_argument('--use_saw', action='store_true', default=False, help='Enable Subject-Adaptive Whitening (SAW) during evaluation')
+    parser.add_argument('--use_saw', dest='use_saw', action='store_true', default=True, help='Enable Subject-Adaptive Whitening (SAW) during evaluation (default: on)')
+    parser.add_argument('--no_saw', dest='use_saw', action='store_false', help='Disable Subject-Adaptive Whitening (SAW)')
     parser.add_argument('--saw_shrink', type=float, default=0.6, help='Shrinkage coefficient for SAW covariance estimation')
     parser.add_argument('--saw_diag', action='store_true', default=False, help='Use diagonal covariance approximation in SAW')
     # Global feature whitening and calibration before CSLS/logit evaluation
