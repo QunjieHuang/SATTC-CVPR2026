@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+type: software
+title: "SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subject EEG-to-Image Retrieval"
+version: "1.0.0"
+date-released: "2026-03-19"
+license: MIT
+repository-code: "https://github.com/PLACEHOLDER/SATTC-CVPR2026"
+
+authors:
+  - family-names: "Huang"
+    given-names: "Qunjie"
+    email: "huangqunjie@stu.ynu.edu.cn"
+    affiliation: "Yunnan University, China"
+  - family-names: "Zhu"
+    given-names: "Weina"
+    email: "zhuweina@ynu.edu.cn"
+    affiliation: "Yunnan University, China"
+
+preferred-citation:
+  type: conference-paper
+  title: "SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subject EEG-to-Image Retrieval"
+  authors:
+    - family-names: "Huang"
+      given-names: "Qunjie"
+      affiliation: "Yunnan University, China"
+    - family-names: "Zhu"
+      given-names: "Weina"
+      affiliation: "Yunnan University, China"
+  collection-title: "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)"
+  year: 2026

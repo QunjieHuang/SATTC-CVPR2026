@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Paper (arXiv)
+    url: https://arxiv.org/abs/XXXX.XXXXX
+    about: Read the CVPR 2026 paper for full technical details.
