@@ -3032,7 +3032,7 @@ def set_seed(seed):
 def _run_training_pipeline():
     # Use argparse to parse the command-line arguments
     parser = argparse.ArgumentParser(description='EEG Transformer Training Script')
-    parser.add_argument('--data_path', type=str, default="../eeg_dataset/Preprocessed_data_250Hz", help='Path to the EEG dataset')
+    parser.add_argument('--data_path', type=str, default=None, help='Path to the EEG dataset (overrides data_config.json)')
     default_output = './outputs/contrast'
     parser.add_argument('--output_dir', type=str, default=default_output, help='Directory to save output results')
     parser.add_argument('--exp_id', type=str, default="run_sattc_loso_sattc", help='Custom experiment identifier for output folder naming')

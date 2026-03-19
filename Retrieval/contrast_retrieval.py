@@ -762,7 +762,7 @@ def main_train_loop(sub, model, train_dataloader, test_dataloader, optimizer, de
 def main():
     parser = argparse.ArgumentParser(description='Train EEG-Image/Text Model')
 
-    parser.add_argument('--data_path', type=str, default="../eeg_dataset/Preprocessed_data_250Hz", help='Path to the preprocessed EEG data')
+    parser.add_argument('--data_path', type=str, default=None, help='Path to the preprocessed EEG data (overrides data_config.json)')
     parser.add_argument('--project', type=str, default="train_pos_img_text_rep", help='Project name')
     parser.add_argument('--entity', type=str, default="sustech_rethinkingbci", help='Entity name')
     parser.add_argument('--name', type=str, default="lr=3e-4_img_pos_pro_eeg", help='Experiment name')

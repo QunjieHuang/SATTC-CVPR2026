@@ -55,13 +55,13 @@ pip install -r requirements.txt
 
 ## Data Preparation
 
-We use the **THINGS-EEG** dataset. Download the preprocessed data from [Hugging Face](https://huggingface.co/datasets/LidongYang/EEG_Image_decode/tree/main) or [OSF](https://osf.io/3jk45/).
+We use the **THINGS-EEG** dataset. Download the preprocessed data from [OSF](https://osf.io/3jk45/) (Gifford et al.).
 
 Organize the data as follows:
 
 ```
-<your_data_root>/
-├── preprocessed_data/
+/path/to/THINGS-EEG/
+├── Preprocessed_data_250Hz/
 │   ├── sub-01/
 │   │   ├── preprocessed_eeg_training.npy
 │   │   └── preprocessed_eeg_test.npy
@@ -72,7 +72,7 @@ Organize the data as follows:
     └── test_images/
 ```
 
-Update the data paths in [`Retrieval/data_config.json`](Retrieval/data_config.json).
+Update the paths in [`Retrieval/data_config.json`](Retrieval/data_config.json) to point to your local copy.
 
 ### EEG Preprocessing (Optional)
 
