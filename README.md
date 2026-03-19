@@ -169,8 +169,9 @@ If you find this work useful, please cite:
 
 ## Acknowledgments
 
-We thank the authors of the following works for their open-source contributions:
+We thank the authors of the following resources and prior works that supported this project:
 
+- [ATM: Visual Decoding via EEG Embeddings](https://arxiv.org/abs/2403.07721) — Li et al., NeurIPS 2024
 - [THINGS-EEG Dataset](https://www.sciencedirect.com/science/article/pii/S1053811922008758) — Gifford et al.
 - [EEG Natural Image Decoding](https://arxiv.org/abs/2308.13234) — Song et al.
 
