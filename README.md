@@ -36,7 +36,7 @@ Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subj
 
 - Python ≥ 3.10
 - PyTorch ≥ 2.0 with CUDA support
-- GPU: ≥ 16 GB VRAM (tested on RTX 4080 Super)
+- GPU: ≥ 16 GB VRAM (tested on RTX 4090)
 - **CPU RAM: ≥ 36 GB** — each training subject uses ~4.2 GB; full 9-subject LOSO requires ~38 GB at peak during dataset loading. Reduce the subject list (`--subjects`) if RAM is limited.
 - See [`requirements.txt`](requirements.txt) for full list
 
@@ -162,7 +162,7 @@ If you find this work useful, please cite:
 @inproceedings{huang2026sattc,
   title     = {SATTC: Structure-Aware Label-Free Test-Time Calibration for Cross-Subject EEG-to-Image Retrieval},
   author    = {Huang, Qunjie and Zhu, Weina},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   year      = {2026}
 }
 ```
