@@ -21,11 +21,9 @@ Yunnan University, China
 
 Cross-subject EEG-to-image retrieval for visual decoding is challenged by **subject shift** and **hubness** in the embedding space, which distort similarity geometry and destabilize top-*k* rankings, making small-*k* shortlists unreliable. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free calibration head that operates directly on the similarity matrix of frozen EEG and image encoders. SATTC combines a **geometric expert**—subject-adaptive whitening of EEG embeddings with an adaptive variant of Cross-domain Similarity Local Scaling (CSLS)—and a **structural expert** built from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused via a simple Product-of-Experts rule. On THINGS-EEG under a strict leave-one-subject-out protocol, standardized inference with cosine similarities, ℓ₂-normalized embeddings, and candidate whitening already yields a strong cross-subject baseline. Building on this baseline, SATTC further improves Top-1 and Top-5 accuracy, reduces hubness and per-class imbalance, and produces more reliable small-*k* shortlists. These gains transfer across multiple EEG encoders, supporting SATTC as an encoder-agnostic, label-free test-time calibration layer for cross-subject neural decoding.
 
-<!-- Framework figure — uncomment when figure is added to repo:
 <p align="center">
   <img src="assets/fig-framework.png" width="90%"/>
 </p>
--->
 
 ## News
 
@@ -100,14 +98,7 @@ python run_sattc_loso.py \
     --output_dir ./outputs/loso_sattc
 ```
 
-This reproduces the paper's LOSO protocol: each of `sub-01` – `sub-10` is held out as the test subject in turn, with the remaining 9 subjects used for training.  Results are aggregated across all folds.
-
-Expected performance (THINGS-EEG, 200-way retrieval):
-
-| Method | Top-1 | Top-5 |
-|--------|------:|------:|
-| Baseline (cosine, ℓ₂-norm) | ~8% | ~27% |
-| **SATTC (SAW + Ada-CSLS + PoE)** | **~13%** | **~37.5%** |
+This reproduces the paper's LOSO protocol: each of `sub-01` – `sub-10` is held out as the test subject in turn, with the remaining 9 subjects used for training. Results are aggregated across all folds.
 
 To ablate individual components:
 
