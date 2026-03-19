@@ -2583,6 +2583,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                 leave=False,
                 position=0,
                 bar_format=bar_format,
+                ascii=True,
             )
 
         def advance_epoch(samples):

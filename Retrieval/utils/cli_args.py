@@ -61,7 +61,7 @@ def get_ada_csls_defaults(overrides: Optional[Dict[str, Any]] = None) -> Dict[st
 def register_eeg_encoder_arg(
     parser: ArgumentParser,
     *,
-    default: str = "shallow",
+    default: str = "atm",
 ) -> ArgumentParser:
     """Register the EEG encoder selection argument.
 
