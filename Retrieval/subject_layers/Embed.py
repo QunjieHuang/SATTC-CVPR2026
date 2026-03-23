@@ -110,8 +110,8 @@ class SubjectEmbedding(nn.Module):
     def __init__(self, num_subjects, d_model):
         super(SubjectEmbedding, self).__init__()
         self.subject_embedding = nn.Embedding(num_subjects, d_model)
-        self.shared_embedding = nn.Parameter(torch.randn(1, d_model))  # Shared token for unknown subjects
-        self.mask_embedding = nn.Parameter(torch.randn(1, d_model))  # Mask token embedding
+        self.shared_embedding = nn.Parameter(torch.randn(1, d_model))
+        self.mask_embedding = nn.Parameter(torch.randn(1, d_model))
 
     def forward(self, subject_ids):
         if subject_ids[0] is None or torch.any(subject_ids >= self.subject_embedding.num_embeddings):
@@ -119,32 +119,6 @@ class SubjectEmbedding(nn.Module):
             return self.shared_embedding.expand(batch_size, 1, -1)
         else:
             return self.subject_embedding(subject_ids).unsqueeze(1)
-
-        
-# class DataEmbedding(nn.Module):
-#     def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1, num_subjects=None):
-#         super(DataEmbedding, self).__init__()
-#         self.value_embedding = nn.Linear(c_in, d_model)
-#         self.position_embedding = PositionalEmbedding(d_model=d_model)
-#         self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
-#         self.dropout = nn.Dropout(p=dropout)
-#         self.subject_embedding = SubjectEmbedding(num_subjects, d_model) if num_subjects is not None else None
-#         self.mask_token = nn.Parameter(torch.randn(1, d_model))  # Mask token embedding
-
-#     def forward(self, x, x_mark, subject_ids=None, mask=None):
-#         if x_mark is None:
-#             x = self.value_embedding(x) 
-#         else:
-#             x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.position_embedding(x)
-
-#         if mask is not None:
-#             x = x * (~mask.bool()) + self.mask_token * mask.float()
-
-#         if self.subject_embedding is not None:
-#             subject_emb = self.subject_embedding(subject_ids)  # (batch_size, 1, d_model)
-#             x = torch.cat([subject_emb, x], dim=1)  # concatenate along sequence dim (batch_size, seq_len+1, d_model)
-
-#         return self.dropout(x)
 
 class DataEmbedding(nn.Module):
     def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1, joint_train=False, num_subjects=None, use_subject_unk=False):
@@ -154,13 +128,13 @@ class DataEmbedding(nn.Module):
                 str(subject_id): nn.Linear(c_in, d_model) for subject_id in range(num_subjects)
             })
         else:
-            self.value_embedding = nn.Linear(c_in, d_model)  # subjectsvalue embedding
+            self.value_embedding = nn.Linear(c_in, d_model)
 
         self.position_embedding = PositionalEmbedding(d_model=d_model)
         self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
         self.dropout = nn.Dropout(p=dropout)
         self.subject_embedding = SubjectEmbedding(num_subjects, d_model) if num_subjects is not None else None
-        self.mask_token = nn.Parameter(torch.randn(1, d_model))  # Mask token embedding
+        self.mask_token = nn.Parameter(torch.randn(1, d_model))
         self.joint_train = joint_train
         
     def forward(self, x, x_mark, subject_ids=None, mask=None):
@@ -177,16 +151,12 @@ class DataEmbedding(nn.Module):
             x = x * (~mask.bool()) + self.mask_token * mask.float()
 
         if self.subject_embedding is not None and subject_ids is not None:
-            subject_emb = self.subject_embedding(subject_ids)  # (batch_size, 1, d_model)
-            
-            # DDP4
+            subject_emb = self.subject_embedding(subject_ids)
             if x.ndim == 4 and subject_emb.ndim == 3:
-                # x4[batch_size, extra_dim, seq_len, d_model] -> [batch_size, seq_len, d_model]
                 batch_size, extra_dim, seq_len, d_model = x.shape
                 x = x.view(batch_size, extra_dim * seq_len, d_model)
-                
             if subject_emb.ndim == x.ndim:
-                x = torch.cat([subject_emb, x], dim=1)  # concatenate along sequence dim
+                x = torch.cat([subject_emb, x], dim=1)
 
         return self.dropout(x)
 
@@ -201,12 +171,10 @@ class DataEmbedding_inverted(nn.Module):
 
     def forward(self, x, x_mark):
         x = x.permute(0, 2, 1)
-        # x: [Batch Variate Time]
         if x_mark is None:
             x = self.value_embedding(x)
         else:
             x = self.value_embedding(torch.cat([x, x_mark.permute(0, 2, 1)], 1))
-        # x: [Batch Variate d_model]
         return self.dropout(x)
 
 
@@ -232,26 +200,17 @@ class DataEmbedding_wo_pos(nn.Module):
 class PatchEmbedding(nn.Module):
     def __init__(self, d_model, patch_len, stride, padding, dropout):
         super(PatchEmbedding, self).__init__()
-        # Patching
         self.patch_len = patch_len
         self.stride = stride
         self.padding_patch_layer = nn.ReplicationPad1d((0, padding))
-
-        # Backbone, Input encoding: projection of feature vectors onto a d-dim vector space
         self.value_embedding = nn.Linear(patch_len, d_model, bias=False)
-
-        # Positional embedding
         self.position_embedding = PositionalEmbedding(d_model)
-
-        # Residual dropout
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        # do patching
         n_vars = x.shape[1]
         x = self.padding_patch_layer(x)
         x = x.unfold(dimension=-1, size=self.patch_len, step=self.stride)
         x = torch.reshape(x, (x.shape[0] * x.shape[1], x.shape[2], x.shape[3]))
-        # Input encoding
         x = self.value_embedding(x) + self.position_embedding(x)
         return self.dropout(x), n_vars

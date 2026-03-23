@@ -30,7 +30,7 @@
 Cross-subject EEG-to-image retrieval is challenged by **subject shift** and **hubness**, which distort similarity geometry and destabilize top-*k* rankings. We introduce **SATTC** (Structure-Aware Test-Time Calibration), a label-free framework that calibrates the similarity matrix of frozen EEG and image encoders at test time. SATTC combines a **geometric expert**—subject-adaptive whitening with adaptive CSLS—and a **structural expert** derived from mutual nearest neighbors, bidirectional top-*k* ranks, and class popularity, fused through a simple Product-of-Experts rule. Under strict leave-one-subject-out evaluation on **THINGS-EEG**, SATTC consistently improves Top-1/Top-5 retrieval, reduces hubness and class imbalance, and produces more reliable small-*k* shortlists across multiple EEG encoders.
 
 <p align="center">
-  <img src="assets/fig-framework.png" width="82%"/>
+  <img src="assets/fig-framework.png" width="90%"/>
 </p>
 
 ## News
@@ -188,3 +188,10 @@ We thank the authors of the following resources and prior works that supported t
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+<!-- git config --global http.proxy http://127.0.0.1:7897
+git config --global https.proxy http://127.0.0.1:7897
+git push origin main
+
+git config --global --unset http.proxy
+git config --global --unset https.proxy -->

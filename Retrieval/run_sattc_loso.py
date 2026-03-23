@@ -1,42 +1,22 @@
-# =================================================================================
-# 2025.10.17 v1.5baselinecosdot
-
-# =================================================================================
-# v2
-# v2
-# v2: subject_ids
-
-
-# =================================================================================
-# eegdatasets_leaveoneopenclip.pt
-
 import os
 import gc
 import time
 import inspect
 
 import torch
-import torch.optim as optim
-from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
-from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 os.environ.setdefault("WANDB_MODE", "offline")
-from itertools import combinations
-
-# import clip
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn as nn
-import torchvision.transforms as transforms
 import tqdm
 from eegdatasets_leaveone import EEGDataset
 
-from einops.layers.torch import Rearrange, Reduce
+from einops.layers.torch import Rearrange
 
-from sklearn.metrics import confusion_matrix
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 import random
 from util import wandb_logger
 from utils.cli_args import (
@@ -894,20 +874,20 @@ def _build_conformer_backbone(output_dim: int, num_channels: int, seq_len: int) 
 
 class Config:
     def __init__(self):
-        self.task_name = 'classification'  # Example task name
-        self.seq_len = 250                 # Sequence length
-        self.pred_len = 250                # Prediction length
-        self.output_attention = False      # Whether to output attention weights
-        self.d_model = 250                 # Model dimension
-        self.embed = 'timeF'               # Time encoding method
-        self.freq = 'h'                    # Time frequency
-        self.dropout = 0.25                # Dropout rate
-        self.factor = 1                    # Attention scaling factor
-        self.n_heads = 4                   # Number of attention heads
-        self.e_layers = 1                  # Number of encoder layers
-        self.d_ff = 256                    # Feedforward network dimension
-        self.activation = 'gelu'           # Activation function
-        self.enc_in = 63                   # Encoder input dimension (example value)
+        self.task_name = 'classification'
+        self.seq_len = 250
+        self.pred_len = 250
+        self.output_attention = False
+        self.d_model = 250
+        self.embed = 'timeF'
+        self.freq = 'h'
+        self.dropout = 0.25
+        self.factor = 1
+        self.n_heads = 4
+        self.e_layers = 1
+        self.d_ff = 256
+        self.activation = 'gelu'
+        self.enc_in = 63
         
 class iTransformer(nn.Module):
     def __init__(self, configs, joint_train=False,  num_subjects=10, use_subject_unk=False):
@@ -945,11 +925,9 @@ class iTransformer(nn.Module):
         )
 
     def forward(self, x_enc, x_mark_enc, subject_ids=None):
-        # Embedding
         enc_out = self.enc_embedding(x_enc, x_mark_enc, subject_ids)
         enc_out, attns = self.encoder(enc_out, attn_mask=None)
-        enc_out = enc_out[:, :63, :]      
-        # print("enc_out", enc_out.shape)
+        enc_out = enc_out[:, :63, :]
         return enc_out
 
 
@@ -975,13 +953,9 @@ class PatchEmbedding(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        # b, _, _, _ = x.shape
-        x = x.unsqueeze(1)     
-        # print("x", x.shape)   
+        x = x.unsqueeze(1)
         x = self.tsconv(x)
-        # print("tsconv", x.shape)   
         x = self.projection(x)
-        # print("projection", x.shape)  
         return x
 
 
@@ -1098,7 +1072,6 @@ class SATTC(nn.Module):
         return out
 
 
-# Backward-compatibility alias during the naming migration window.
 SATTC_COMPAT = SATTC
 
 def extract_id_from_string(s):
@@ -1131,8 +1104,7 @@ def train_model(sub, eeg_model, dataloader, optimizer, device, text_features_all
     correct_top5 = 0
     total = 0
     alpha=0.99
-    features_list = []  # List to store features
-    save_features= True
+    features_list = []
     batch_count = 0
     subject_id_mode = getattr(config, 'train_subject_ids', 'spoof') or 'spoof'
     real_ids_requested = subject_id_mode.lower() == 'real'
@@ -1204,7 +1176,6 @@ def train_model(sub, eeg_model, dataloader, optimizer, device, text_features_all
             drop_mask = torch.rand_like(subject_ids.float()) < subject_dropout_p
             if drop_mask.any():
                 subject_ids = subject_ids.masked_fill(drop_mask.bool(), int(unk_idx))
-        # eeg_data = eeg_data.permute(0, 2, 1)
         eeg_features = eeg_model(eeg_data, subject_ids).float()
         if use_cos:
             eeg_features = F.normalize(eeg_features, dim=1, eps=1e-12)
@@ -1216,20 +1187,13 @@ def train_model(sub, eeg_model, dataloader, optimizer, device, text_features_all
 
         img_loss = eeg_model.loss_func(eeg_features, img_features, logit_scale)
         text_loss = eeg_model.loss_func(eeg_features, text_features, logit_scale)
-        # loss = img_loss + text_loss
-        # print("text_loss", text_loss)
-        # print("img_loss", img_loss)
         loss = alpha * img_loss + (1 - alpha) * text_loss
         loss.backward()
 
         optimizer.step()
         total_loss += loss.item()
         
-        # Compute the corresponding logits
         logits_img = logit_scale * (eeg_features @ img_features_all.T)
-        # logits_text = logit_scale * (eeg_features @ text_features_all.T)
-        # logits_single = (logits_text + logits_img) / 2.0        
-        # logits_text = logit_scale * (eeg_features @ text_features_all.T)
         logits_single = logits_img
         top_k = min(5, logits_single.size(1))
         topk_indices = torch.topk(logits_single, k=top_k, dim=1).indices
@@ -1277,9 +1241,9 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
     img_whiten_state = _resolve_whitening_state(config, 'img')
     auto_whiten_enabled = bool(getattr(config, 'global_auto_whiten', True))
     if text_whiten_state is None and auto_whiten_enabled:
-        text_whiten_state = _resolve_auto_whitening_state(config, 'text', text_features_all)
+        text_whiten_state = getattr(config, '_cache_auto_whiten_text', None)
     if img_whiten_state is None and auto_whiten_enabled:
-        img_whiten_state = _resolve_auto_whitening_state(config, 'img', img_features_all)
+        img_whiten_state = getattr(config, '_cache_auto_whiten_img', None)
     if text_whiten_state is not None:
         text_features_all = _whiten_features(text_features_all, text_whiten_state)
     if img_whiten_state is not None:
@@ -2487,7 +2451,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
     best_top5_info = None
     best_accuracy_epoch = None
     best_top5_epoch = None
-    results = []  # List to store results for each epoch
+    results = []
 
     tune_early_stop_enabled = False
     tune_min_epochs = 0
@@ -2515,7 +2479,7 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
         else:
             base_dir = os.path.join(root_dir, "across", config.encoder_type, current_time)
         os.makedirs(base_dir, exist_ok=True)
-        best_checkpoint_path = os.path.join(base_dir, f"{subject_tag}_best_top5.pth")
+        best_checkpoint_path = os.path.join(base_dir, f"{subject_tag}_final.pth")
     else:
         tune_early_stop_enabled = bool(getattr(config, 'tune_early_stop', False))
         if tune_early_stop_enabled:
@@ -2587,7 +2551,6 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
             if epoch_bar is not None:
                 epoch_bar.update(samples)
 
-        # Train the model
         train_loss, train_accuracy, _ = train_model(
             sub,
             eeg_model,
@@ -2609,7 +2572,6 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
         train_accuracies.append(train_accuracy)
 
 
-        # Evaluate the model
         eval_kwargs = dict(
             sub=sub,
             eeg_model=eeg_model,
@@ -2671,11 +2633,8 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
         v4_accs.append(v4_acc)
         v10_accs.append(v10_acc)
         
-        # Append results for this epoch
         epoch_results = {
             "epoch": epoch + 1,
-            # "train_loss": train_loss,
-            # "train_accuracy": train_accuracy,
             "test_loss": test_loss,
             "test_accuracy": test_accuracy,
             "v2_acc": v2_acc,
@@ -2774,7 +2733,6 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                     tune_epoch_note = "[EarlyStop]  Early-stop condition met; will exit after this epoch"
                 tune_break_after_epoch = True
 
-        # If the test accuracy of the current epoch is the best, save the model and related information
         if test_accuracy > best_accuracy:
             best_accuracy = test_accuracy
             best_accuracy_epoch = epoch + 1
@@ -2881,18 +2839,13 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                 "v10_acc": v10_acc,
                 "aligned_strict": alignment_strict_flag,
             }
-            if stage == 'final' and best_checkpoint_path is not None:
-                torch.save(eeg_model.state_dict(), best_checkpoint_path)
-                print(f"             -  Saved best Top-5 checkpoint to {best_checkpoint_path}")
+        is_last_epoch = (epoch + 1 >= config.epochs) or tune_break_after_epoch
+        if stage == 'final' and is_last_epoch and best_checkpoint_path is not None:
+            torch.save(eeg_model.state_dict(), best_checkpoint_path)
+            print(f"             -  Saved final-epoch checkpoint to {best_checkpoint_path}")
         print(f"            {'-' * 110}")
         if tune_break_after_epoch:
             break
-    # # Load the best model weights
-    # model.load_state_dict(best_model_weights)
-
-    # # # Save the best model
-    # torch.save(model.state_dict(), '{train_pos_img_text}.pth')
-
     # Create 5 subplots
     fig, axs = plt.subplots(3, 2, figsize=(10, 15))
 
@@ -3030,15 +2983,14 @@ def set_seed(seed):
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 def _run_training_pipeline():
-    # Use argparse to parse the command-line arguments
     parser = argparse.ArgumentParser(description='EEG Transformer Training Script')
     parser.add_argument('--data_path', type=str, default=None, help='Path to the EEG dataset (overrides data_config.json)')
     default_output = './outputs/contrast'
     parser.add_argument('--output_dir', type=str, default=default_output, help='Directory to save output results')
     parser.add_argument('--exp_id', type=str, default="run_sattc_loso_sattc", help='Custom experiment identifier for output folder naming')
     parser.add_argument('--seed', type=int, default=None, help='Random seed for reproducibility (optional; omit for non-deterministic runs)')
-    parser.add_argument('--project', type=str, default="train_pos_img_text_rep", help='WandB project name')
-    parser.add_argument('--entity', type=str, default="sustech_rethinkingbci", help='WandB entity name')
+    parser.add_argument('--project', type=str, default="sattc_loso", help='WandB project name')
+    parser.add_argument('--entity', type=str, default=None, help='WandB entity name')
     parser.add_argument('--name', type=str, default="lr=5e-4_img_pos_pro_eeg", help='Experiment name')
     parser.add_argument('--lr', type=float, default=5e-4, help='Learning rate')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
@@ -3048,7 +3000,6 @@ def _run_training_pipeline():
     parser.add_argument('--device', type=str, choices=['cpu', 'gpu'], default='gpu', help='Device to run on (cpu or gpu)')    
     parser.add_argument('--insubject', type=bool, default=False, help='In-subject mode or cross-subject mode')
     parser.add_argument('--encoder_type', type=str, default='SATTC', help='Encoder type')
-    # GPU selection
     parser.add_argument('--gpu', type=str, default='cuda:0', help='GPU device to use')
     # Similarity metric
     parser.add_argument('--sim', type=str, choices=['cos', 'dot'], default='cos', help='Similarity metric for loss/evaluation (cos or dot)')
@@ -3205,7 +3156,6 @@ def _run_training_pipeline():
 
     args.eval_batch_size = max(1, args.eval_batch_size)
 
-    # Set device based on the argument
     if args.device == 'gpu' and torch.cuda.is_available():
         device = torch.device(args.gpu)
     else:
@@ -3703,10 +3653,7 @@ def _run_training_pipeline():
                         writer.writerows(final_results)
                     print(f"Final-stage results saved to {final_results_file}")
 
-                    best_final = max(
-                        final_results,
-                        key=lambda x: (x.get('top5_acc', -1), x.get('test_accuracy', -1))
-                    )
+                    last_final = final_results[-1]
                     exp_name = str(getattr(args, 'exp_id', '') or '').strip()
                     model_root = os.path.join("./models/contrast", exp_name) if exp_name else "./models/contrast"
                     if args.insubject:
@@ -3714,22 +3661,22 @@ def _run_training_pipeline():
                     else:
                         model_base_dir = os.path.join(model_root, "across", args.encoder_type, current_time)
                     os.makedirs(model_base_dir, exist_ok=True)
-                    best_checkpoint_path = os.path.join(model_base_dir, f"{subject_tag}_best_top5.pth")
+                    best_checkpoint_path = os.path.join(model_base_dir, f"{subject_tag}_final.pth")
 
                     final_primary = {
-                        "Best Test Top-5": best_final.get('top5_acc'),
-                        "Best Test Top-1": best_final.get('test_accuracy'),
+                        "Last Epoch Test Top-5": last_final.get('top5_acc'),
+                        "Last Epoch Test Top-1": last_final.get('test_accuracy'),
                         "Duration": final_stage_duration_str,
                     }
                     final_auxiliary = {
-                        "Epoch": best_final.get('epoch'),
-                        "Top-1@2": best_final.get('v2_acc'),
-                        "Top-1@4": best_final.get('v4_acc'),
-                        "Top-1@10": best_final.get('v10_acc'),
-                        "Top-1@50": best_final.get('v50_acc'),
-                        "Top-1@100": best_final.get('v100_acc'),
-                        "Top-5@50": best_final.get('v50_top5_acc'),
-                        "Top-5@100": best_final.get('v100_top5_acc'),
+                        "Epoch": last_final.get('epoch'),
+                        "Top-1@2": last_final.get('v2_acc'),
+                        "Top-1@4": last_final.get('v4_acc'),
+                        "Top-1@10": last_final.get('v10_acc'),
+                        "Top-1@50": last_final.get('v50_acc'),
+                        "Top-1@100": last_final.get('v100_acc'),
+                        "Top-5@50": last_final.get('v50_top5_acc'),
+                        "Top-5@100": last_final.get('v100_top5_acc'),
                         "Checkpoint": best_checkpoint_path,
                     }
                     print_stage_summary("Final", sub, final_primary, final_auxiliary)
@@ -3740,9 +3687,9 @@ def _run_training_pipeline():
                     final_summary = {
                         "subject": sub,
                         "stage": "final",
-                        "best_epoch": best_final.get('epoch'),
-                        "test_top1": best_final.get('test_accuracy'),
-                        "best_test_top5": best_final.get('top5_acc'),
+                        "reported_epoch": last_final.get('epoch'),
+                        "test_top1": last_final.get('test_accuracy'),
+                        "test_top5": last_final.get('top5_acc'),
                         "epochs_run": config_final.epochs,
                         "best_tune_epoch": best_tune_epoch,
                         "best_val_top5": best_val_top5,

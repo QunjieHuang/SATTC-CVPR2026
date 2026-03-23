@@ -1,20 +1,10 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import numpy as np
 import os
-# import clip
-from torch.nn import functional as F
-import torch.nn as nn
-from torchvision import transforms
-from PIL import Image
 import json
 
-cuda_device_count = torch.cuda.device_count()
-print(cuda_device_count)
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model_type = 'ViT-H-14'
-
-import json
 
 # Resolve paths relative to this file to avoid cwd issues when running different scripts
 _this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -39,9 +29,6 @@ img_directory_test = _resolve(config["img_directory_test"])
 
 
 class EEGDataset(Dataset):
-    """
-    subjects = ['sub-01', 'sub-02', 'sub-05', 'sub-04', 'sub-03', 'sub-06', 'sub-07', 'sub-08', 'sub-09', 'sub-10']
-    """
     def __init__(self, data_path, exclude_subject=None, subjects=None, train=True, time_window=[0, 1.0], classes = None, pictures = None, val_size=None, anchor_mode=None, return_subject_ids=False):
         self.data_path = data_path
         self.train = train
@@ -218,9 +205,7 @@ class EEGDataset(Dataset):
         else:
             
             print("Error")
-            
-        print("self.subjects", self.subjects)
-        print("exclude_subject", self.exclude_subject)
+
         subject_list = []
         for subject in self.subjects:
             subject_idx = self.subject_to_idx.get(subject)
@@ -287,16 +272,15 @@ class EEGDataset(Dataset):
                             self.images_per_class = sample_count
 
             else:
-                if subject == self.exclude_subject or self.exclude_subject==None:  
+                if subject == self.exclude_subject or self.exclude_subject is None:
                     file_name = 'preprocessed_eeg_test.npy'
                     file_path = os.path.join(self.data_path, subject, file_name)
                     data = np.load(file_path, allow_pickle=True)
                     preprocessed_eeg_data = torch.from_numpy(data['preprocessed_eeg_data']).float().detach()
                     times = torch.from_numpy(data['times']).detach()[50:]
                     ch_names = data['ch_names']  
-                    n_classes = 200  # Each class contains 1 images
-                    
-                    samples_per_class = 1  
+                    n_classes = 200
+                    samples_per_class = 1
 
                     for i in range(n_classes):
                         if self.classes is not None and i not in self.classes:  
@@ -312,10 +296,6 @@ class EEGDataset(Dataset):
                             self.images_per_class = samples_per_class
                 else:
                     continue
-        # datalist: (subjects * classes) * (10 * 4 * 17 * 100)
-        # data_tensor: (subjects * classes * 10 * 4) * 17 * 100
-        # data_list = np.mean(data_list, )
-        # print("data_list", len(data_list))
         if self.images_per_class is None:
             if self.train and self.anchor_mode == 'first_per_class':
                 self.images_per_class = 1
@@ -325,70 +305,30 @@ class EEGDataset(Dataset):
                 self.images_per_class = 1
 
         if self.train:
-            # print("data_list", *data_list[0].shape[1:])            
-            data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape[2:])                 
-            # data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape[1:])
-            # data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape)   
-            # print("label_tensor", label_tensor.shape)
-            print("data_tensor", data_tensor.shape)
-        else:           
-            data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape)   
-            # label_tensor = torch.cat(label_list, dim=0)
-            # print("label_tensor", label_tensor.shape)
-            # data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape[2:])
-        # print("data_tensor", data_tensor.shape)
-        # label_list: (subjects * classes) * 10
-        # label_tensor: (subjects * classes * 10)
-        # print("label_tensor = torch.cat(label_list, dim=0)")
-        # print(label_list)
+            data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape[2:])
+        else:
+            data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape)
         label_tensor = torch.cat(label_list, dim=0)
-        # label_tensor = torch.cat(label_list, dim=0)
-        # print(label_tensor[:300])
         subject_tensor = torch.cat(subject_list, dim=0) if subject_list else None
 
         if self.train:
-            # label_tensor: (subjects * classes * 10 * 4)
             label_tensor = label_tensor.repeat_interleave(4)
             if subject_tensor is not None:
                 subject_tensor = subject_tensor.repeat_interleave(4)
-
-        else:
-            # label_tensor = label_tensor.repeat_interleave(80)
-            # if self.classes is not None:
-            #     unique_values = torch.unique(label_tensor, sorted=False)
-           
-            #     mapping = {val.item(): index for index, val in enumerate(torch.flip(unique_values, [0]))}
-            #     label_tensor = torch.tensor([mapping[val.item()] for val in label_tensor], dtype=torch.long)
-            pass      
 
                     
         self.times = times
         self.ch_names = ch_names
         self.sample_subject_indices = subject_tensor
 
-        print(f"Data tensor shape: {data_tensor.shape}, label tensor shape: {label_tensor.shape}, text length: {len(texts)}, image length: {len(images)}")
-        
         return data_tensor, label_tensor, texts, images
 
     def extract_eeg(self, eeg_data, time_window):
-
         start, end = time_window
-
-        # Get the indices of the times within the specified window
         indices = (self.times >= start) & (self.times <= end)
-        # print("self.times", self.times.shape)
-        # print("indices", indices)
-        # print("indices", indices.shape)
-        # print("eeg_data", eeg_data.shape)
-        # Use these indices to select the corresponding data
-        extracted_data = eeg_data[..., indices]
-        # print(f"extracted_data shape: {extracted_data.shape}")
-
-        return extracted_data
+        return eeg_data[..., indices]
     
     def __getitem__(self, index):
-        # Get the data and label corresponding to "index"
-        # index: (subjects * classes * 10 * 4)
         x = self.data[index]
         label = self.labels[index]
         
@@ -399,12 +339,10 @@ class EEGDataset(Dataset):
             else:
                 index_n_sub_test = len(self.classes)* 1 * 80
                 index_n_sub_train = len(self.classes)* self.images_per_class * 4
-            # text_index: classes
             if self.train:
                 text_index = (index % index_n_sub_train) // (self.images_per_class * 4)
             else:
                 text_index = (index % index_n_sub_test)
-            # img_index: classes * 10
             if self.train:
                 img_index = (index % index_n_sub_train) // (4)
             else:
@@ -416,19 +354,14 @@ class EEGDataset(Dataset):
             else:
                 index_n_sub_test = len(self.classes)* 1 * 80
                 index_n_sub_train = len(self.classes)* 1 * 4
-            # text_index: classes
             if self.train:
                 text_index = (index % index_n_sub_train) // (1 * 4)
             else:
                 text_index = (index % index_n_sub_test)
-            # img_index: classes * 10
             if self.train:
                 img_index = (index % index_n_sub_train) // (4)
             else:
                 img_index = (index % index_n_sub_test)
-        # print("text_index", text_index)
-        # print("self.text", self.text)
-        # print("self.text", len(self.text))
         text = self.text[text_index]
         img = self.img[img_index]
         
@@ -444,30 +377,7 @@ class EEGDataset(Dataset):
         return sample
 
     def __len__(self):
-        return self.data.shape[0]  # or self.labels.shape[0] which should be the same
-
-if __name__ == "__main__":
-    # Instantiate the dataset and dataloader
-    # data_path = "/home/ldy/Workspace/THINGS/EEG/osfstorage-archive"  # Replace with the path to your data
-    data_path = data_path
-    train_dataset = EEGDataset(data_path, subjects = ['sub-01'], train=True)    
-    test_dataset = EEGDataset(data_path, subjects = ['sub-01'], train=False)
-    # train_dataset = EEGDataset(data_path, exclude_subject = 'sub-01', train=True)    
-    # test_dataset = EEGDataset(data_path, exclude_subject = 'sub-01', train=False)    
-    # train_dataset = EEGDataset(data_path, train=True) 
-    # test_dataset = EEGDataset(data_path, train=False) 
-    
-    
-    
-    
-    # 100 Hz
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
-    
-    i = 80*1-1
-    x, label, text, text_features, img, img_features  = test_dataset[i]
-    print(f"Index {i}, Label: {label}, text: {text}")
-    Image.open(img)
+        return self.data.shape[0]
             
     
         

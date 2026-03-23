@@ -60,11 +60,6 @@ def train_one_epoch(model, data_loader, optimizer, device, epoch,
     total_cor = []
     accum_iter = config.accum_iter
     for data_iter_step, (data_dcit) in enumerate(data_loader):
-        
-        # we use a per iteration (instead of per epoch) lr scheduler
-        # print(data_iter_step)
-        # print(len(data_loader))
-        
         if data_iter_step % accum_iter == 0:
             adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, config)
         samples = data_dcit['eeg']
@@ -78,14 +73,10 @@ def train_one_epoch(model, data_loader, optimizer, device, epoch,
             with torch.no_grad():
                 img_features = img_feature_extractor(preprocess(images[valid_idx]).to(device))['layer2']
         samples = samples.to(device)
-        # img_features = img_features.to(device)
 
         optimizer.zero_grad()
         with torch.cuda.amp.autocast(enabled=True):
             loss, pred, _ = model(samples, img_features, valid_idx=valid_idx, mask_ratio=config.mask_ratio)
-        # loss.backward()
-        # norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.clip_grad)
-        # optimizer.step()
 
         loss_value = loss.item()
 
@@ -93,14 +84,10 @@ def train_one_epoch(model, data_loader, optimizer, device, epoch,
             print(f"Loss is {loss_value}, stopping training at step {data_iter_step} epoch {epoch}")
             sys.exit(1)
 
-        # loss /= accum_iter
         loss_scaler(loss, optimizer, parameters=model.parameters(), clip_grad=config.clip_grad)
 
-        # if (data_iter_step + 1) % accum_iter == 0:
-        # cal the cor
         pred = pred.to('cpu').detach()
         samples = samples.to('cpu').detach()
-        # pred = pred.transpose(1,2) #model_without_ddp.unpatchify(pred)
         pred = model_without_ddp.unpatchify(pred)
             
         cor = torch.mean(torch.tensor([torch.corrcoef(torch.cat([p[0].unsqueeze(0), s[0].unsqueeze(0)],axis=0))[0,1] for p, s in zip(pred, samples)])).item()
