@@ -2,11 +2,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/CVPR-2026-blue" alt="CVPR 2026">
-  <img src="https://img.shields.io/badge/Status-Official%20Repo-success" alt="Official Repo">
+  <a href="https://arxiv.org/abs/2603.20738"><img src="https://img.shields.io/badge/arXiv-2603.20738-b31b1b" alt="arXiv"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
-  <!-- Uncomment when arXiv is live:
-  <a href="https://arxiv.org/abs/XXXX.XXXXX"><img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b" alt="arXiv"></a>
-  -->
+
 </p>
 
 <p align="center">
@@ -35,9 +33,10 @@ Cross-subject EEG-to-image retrieval is challenged by **subject shift** and **hu
 
 ## News
 
+- **[2026/03]** arXiv version available.
 - **[2026/03]** Code released for SATTC.
-<!-- - **[2026/03]** CVPR 2026 camera-ready submission completed.
-- **[2026/03]** arXiv version available. -->
+- **[2026/03]** CVPR 2026 camera-ready submission completed. 
+
 
 
 ## Installation
@@ -188,10 +187,3 @@ We thank the authors of the following resources and prior works that supported t
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
-<!-- git config --global http.proxy http://127.0.0.1:7897
-git config --global https.proxy http://127.0.0.1:7897
-git push origin main
-
-git config --global --unset http.proxy
-git config --global --unset https.proxy -->
